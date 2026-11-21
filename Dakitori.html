@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAKITORI — Street-Food Coréenne & Roulette Gourmande</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Tone.js pour les effets sonores légers et immersifs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        charcoal: '#121214',
+                        slateDark: '#1C1C21',
+                        gochujang: '#E63946',
+                        gochujangDark: '#B82530',
+                        honey: '#FFB703',
+                        honeyLight: '#FFD166',
+                        cream: '#F8F9FA'
+                    },
+                    animation: {
+                        'pulse-glow': 'pulseGlow 2s infinite',
+                        'bounce-short': 'bounceShort 0.5s ease-out',
+                    },
+                    keyframes: {
+                        pulseGlow: {
+                            '0%, 100%': { boxShadow: '0 0 20px rgba(230, 57, 70, 0.4)' },
+                            '50%': { boxShadow: '0 0 35px rgba(255, 183, 3, 0.6)' },
+                        },
+                        bounceShort: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-8px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-charcoal text-cream font-sans antialiased selection:bg-gochujang selection:text-white overflow-x-hidden">
+
+    <!-- Canvas pour les confettis de célébration -->
+    <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-50 w-full h-full"></canvas>
+
+    <!-- Barre de Navigation -->
+    <header class="sticky top-0 z-40 bg-charcoal/90 backdrop-blur-md border-b border-white/10">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+            <a href="#" class="flex items-center gap-3 group">
+                <img src="dakidaki.png" alt="Logo DAKITORI" class="h-20 w-auto object-contain rounded-xl">
+                <div>
+                    <span class="font-black text-xl tracking-wider text-white">DAKITORI</span>
+                    <span class="hidden sm:inline-block ml-2 text-xs font-semibold uppercase tracking-widest text-honey bg-honey/10 px-2 py-0.5 rounded-full">Korean Street-Food</span>
+                </div>
+            </a>
+
+            <nav class="flex items-center gap-2 sm:gap-6">
+                <a href="#roulette" class="text-sm font-medium text-gray-300 hover:text-honey transition-colors px-2 py-1">La Roulette</a>
+                <a href="#carte" class="text-sm font-medium text-gray-300 hover:text-honey transition-colors px-2 py-1">La Carte</a>
+                <button id="sound-toggle" aria-label="Activer ou couper le son" class="p-2.5 rounded-xl bg-slateDark border border-white/10 text-gray-300 hover:text-white hover:border-honey/50 transition-all text-sm flex items-center gap-1.5">
+                    <span id="sound-icon">🔊</span>
+                    <span class="hidden md:inline text-xs font-medium" id="sound-label">Son activé</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Section Principale : Sélecteur Aléatoire -->
+    <main>
+        <section id="roulette" class="relative pt-10 pb-16 sm:pt-16 sm:pb-24 px-4 sm:px-6 overflow-hidden">
+            <!-- Décors d'arrière-plan flous -->
+            <div class="absolute top-10 left-1/4 w-72 h-72 bg-gochujang/20 rounded-full blur-[120px] pointer-events-none"></div>
+            <div class="absolute bottom-10 right-1/4 w-80 h-80 bg-honey/15 rounded-full blur-[130px] pointer-events-none"></div>
+
+            <div class="max-w-4xl mx-auto text-center relative z-10">
+                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slateDark border border-white/10 text-honey text-xs sm:text-sm font-semibold mb-6">
+                    <span>🔥</span>
+                    <span>Indécis devant la carte ? Laisse le destin choisir !</span>
+                </div>
+
+                <h1 class="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-white mb-4 leading-tight">
+                    Qu'est-ce qu'on mange chez <span class="text-transparent bg-clip-text bg-gradient-to-r from-gochujang via-orange-500 to-honey">DAKITORI</span> ?
+                </h1>
+                <p class="text-gray-400 text-base sm:text-lg max-w-2xl mx-auto mb-8">
+                    Filtre tes envies du moment puis lance la roulette pour découvrir ton prochain festin coréen avec sa variante exacte.
+                </p>
+
+                <!-- Barre de Filtres -->
+                <div class="bg-slateDark/80 backdrop-blur-sm border border-white/10 rounded-2xl p-4 sm:p-5 mb-8 max-w-3xl mx-auto shadow-xl">
+                    <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <!-- Filtres par Catégorie -->
+                        <div class="flex flex-wrap items-center justify-center gap-2" id="category-filters">
+                            <button data-cat="all" class="filter-btn active px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all bg-gochujang text-white shadow-md">
+                                Tout le menu
+                            </button>
+                            <button data-cat="bowls" class="filter-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-charcoal/80 text-gray-300 hover:text-white border border-white/10">
+                                🍚 Plats & Bowls
+                            </button>
+                            <button data-cat="burgers" class="filter-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-charcoal/80 text-gray-300 hover:text-white border border-white/10">
+                                🍔 DakiBurgs
+                            </button>
+                            <button data-cat="wings" class="filter-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-charcoal/80 text-gray-300 hover:text-white border border-white/10">
+                                🍗 Wings & Sides
+                            </button>
+                        </div>
+
+                        <!-- Option Exclure Épicé -->
+                        <label class="flex items-center gap-2.5 cursor-pointer select-none bg-charcoal/80 px-3.5 py-2 rounded-xl border border-white/10 hover:border-honey/40 transition-colors">
+                            <input type="checkbox" id="exclude-spicy" class="w-4 h-4 accent-gochujang rounded cursor-pointer">
+                            <span class="text-xs sm:text-sm font-medium text-gray-200">Sans épicé (No Spyci) 🌶️🚫</span>
+                        </label>
+                    </div>
+                    <div class="mt-3 text-xs text-gray-400 flex items-center justify-center gap-2">
+                        <span id="pool-count" class="font-semibold text-honey">29 combinaisons</span> disponibles dans le tirage
+                    </div>
+                </div>
+
+                <!-- Machine à Sous / Affichage du Résultat -->
+                <div id="slot-card" class="relative bg-gradient-to-b from-slateDark to-[#16161A] border-2 border-white/15 rounded-3xl p-6 sm:p-10 shadow-2xl max-w-2xl mx-auto transition-all duration-300">
+                    <!-- Badge Haut -->
+                    <div class="flex justify-center mb-4">
+                        <span id="result-category-badge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/5 text-gray-400 border border-white/10">
+                            Prêt pour le tirage
+                        </span>
+                    </div>
+
+                    <!-- Zone Centrale Animée -->
+                    <div class="min-h-[160px] sm:min-h-[190px] flex flex-col items-center justify-center my-2">
+                        <div id="result-emoji" class="text-5xl sm:text-6xl mb-4 transition-transform duration-200">
+                            🥢
+                        </div>
+
+                        <h2 id="result-dish" class="text-3xl sm:text-5xl font-black text-white tracking-tight mb-3 transition-all">
+                            Tente ta chance !
+                        </h2>
+
+                        <div id="result-variant-wrapper" class="min-h-[36px] flex items-center justify-center">
+                            <span id="result-variant" class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm sm:text-base font-extrabold bg-honey/15 text-honey border border-honey/30">
+                                ✨ Clique sur le bouton ci-dessous
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Description Gourmande -->
+                    <p id="result-description" class="text-gray-300 text-sm sm:text-base max-w-lg mx-auto mt-4 mb-8 min-h-[48px] leading-relaxed">
+                        Un mélange explosif de saveurs coréennes : poulet croustillant, sauces maison miel ou gochujang, et accompagnements généreux.
+                    </p>
+
+                    <!-- Bouton Principal d'Action -->
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+                        <button id="spin-btn" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-gochujang to-orange-600 hover:from-gochujangDark hover:to-orange-700 active:scale-95 text-white font-black text-base sm:text-lg tracking-wide shadow-xl shadow-gochujang/30 transition-all flex items-center justify-center gap-3 cursor-pointer">
+                            <span id="spin-btn-icon" class="text-xl">🎲</span>
+                            <span id="spin-btn-text">Lancer la roulette</span>
+                        </button>
+
+                        <button id="copy-btn" class="hidden w-full sm:w-auto px-5 py-4 rounded-2xl bg-charcoal hover:bg-white/10 border border-white/15 text-gray-200 font-semibold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer" title="Copier ma commande">
+                            <span>📋</span>
+                            <span id="copy-btn-text">Copier le choix</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Historique rapide des derniers tirages -->
+                <div id="history-container" class="hidden mt-8 max-w-2xl mx-auto">
+                    <p class="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-2.5">Tirages précédents</p>
+                    <div id="history-list" class="flex flex-wrap items-center justify-center gap-2"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Séparateur Visuel -->
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"></div>
+        </div>
+
+        <!-- Section : La Carte Complète -->
+        <section id="carte" class="py-16 sm:py-24 px-4 sm:px-6">
+            <div class="max-w-6xl mx-auto">
+                <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+                    <div>
+                        <span class="text-honey font-bold text-xs uppercase tracking-widest">100% Fait Maison & Généreux</span>
+                        <h2 class="text-3xl sm:text-4xl font-black text-white mt-1">La Carte Complète DAKITORI</h2>
+                    </div>
+                    <p class="text-gray-400 text-sm max-w-md">
+                        Clique sur n'importe quel plat ou variante ci-dessous pour le prévisualiser directement dans le sélecteur !
+                    </p>
+                </div>
+
+                <!-- Grille des Plats générée dynamiquement -->
+                <div id="menu-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Les cartes seront injectées ici via JavaScript -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Pied de page -->
+    <footer class="bg-slateDark border-t border-white/10 py-10 px-4 text-center">
+        <div class="max-w-4xl mx-auto">
+            <div class="flex items-center justify-center gap-2 mb-3">
+                <span class="w-7 h-7 rounded-lg bg-gochujang text-white font-black text-sm flex items-center justify-center">닭</span>
+                <span class="font-black text-lg tracking-wider text-white">DAKITORI</span>
+            </div>
+            <p class="text-gray-400 text-sm mb-4">
+                Street-Food Coréenne Authentique — Bowls, DakiBurgs, Wings & Gourmandises.
+            </p>
+            <p class="text-xs text-gray-500">
+                © 2026 DAKITORI. Fait avec passion pour les amoureux de croustillant et de Gochujang.
+            </p>
+        </div>
+    </footer>
+
+    <!-- Toast Notification (Remplace alert()) -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slateDark border border-honey/40 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 text-sm font-medium">
+        <span class="text-honey text-lg">✅</span>
+        <span id="toast-message">Message</span>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. DONNÉES DU MENU COMPLET DAKITORI
+        // ==========================================
+        const MENU_DATA = [
+            {
+                id: 'bibimbap',
+                name: 'BIM bim bap',
+                category: 'bowls',
+                categoryLabel: 'Plats & Bowls',
+                emoji: '🍚',
+                spicy: false,
+                baseDesc: 'Grand bol de riz chaud garni de légumes sautés croquants, sésame grillé et sauce maison.',
+                variants: [
+                    { name: 'Veg', spicy: false, extraDesc: 'Version 100% végétarienne riche en légumes marinés et croquants.' },
+                    { name: 'Egg', spicy: false, extraDesc: 'Surmonté d’un œuf au plat coulant qui lie toutes les saveurs.' },
+                    { name: 'Katsu', spicy: false, extraDesc: 'Accompagné d’un généreux filet de poulet pané croustillant façon Katsu.' },
+                    { name: '4 Wings', spicy: false, extraDesc: 'Servi avec 4 ailes de poulet croustillantes dorées à la perfection.' }
+                ]
+            },
+            {
+                id: 'tofu',
+                name: 'Tofu',
+                category: 'bowls',
+                categoryLabel: 'Plats & Bowls',
+                emoji: '🧊',
+                spicy: false,
+                baseDesc: 'Tofu soyeux ou saisi doré façon coréenne, servi sur lit de riz parfumé et légumes frais.',
+                variants: [
+                    { name: 'Veg', spicy: false, extraDesc: 'Recette végétarienne équilibrée aux herbes fraîches et sésame.' },
+                    { name: 'Egg', spicy: false, extraDesc: 'Accompagné d’un œuf au plat doré pour encore plus de gourmandise.' },
+                    { name: 'Katsu', spicy: false, extraDesc: 'Combiné à notre croustillant Katsu doré au panko.' }
+                ]
+            },
+            {
+                id: 'curry',
+                name: 'Curry',
+                category: 'bowls',
+                categoryLabel: 'Plats & Bowls',
+                emoji: '🍛',
+                spicy: false,
+                baseDesc: 'Sauce curry coréenne onctueuse, riche et légèrement sucrée-épicée avec riz vapeur.',
+                variants: [
+                    { name: 'Egg', spicy: false, extraDesc: 'Nappé d’un œuf fondant qui adoucit la richesse du curry.' },
+                    { name: 'Katsu', spicy: false, extraDesc: 'Le grand classique : escalope Katsu ultra-croustillante nappée de curry.' }
+                ]
+            },
+            {
+                id: 'dakiburg-honey',
+                name: 'DakiBurg Honey',
+                category: 'burgers',
+                categoryLabel: 'DakiBurgs',
+                emoji: '🍔',
+                spicy: false,
+                baseDesc: 'Pain brioché toasté, poulet croustillant glacé au miel doré, salade croquante et sauce signature.',
+                variants: [
+                    { name: 'Classique', spicy: false, extraDesc: 'La recette authentique sucrée-salée au miel doré.' },
+                    { name: 'Egg', spicy: false, extraDesc: 'Ajout d’un œuf au plat coulant au cœur du burger.' },
+                    { name: 'Ananas', spicy: false, extraDesc: 'Une tranche d’ananas rôti caramélisé pour une touche exotique.' },
+                    { name: 'Egg Ananas', spicy: false, extraDesc: 'Le combo ultime : œuf coulant + ananas rôti caramélisé !' }
+                ]
+            },
+            {
+                id: 'dakiburg-gochu',
+                name: 'DakiBurg Gochu',
+                category: 'burgers',
+                categoryLabel: 'DakiBurgs',
+                emoji: '🍔',
+                spicy: false,
+                baseDesc: 'Pain brioché moelleux, poulet frit laqué à la sauce Gochujang parfumée et pickles maison.',
+                variants: [
+                    { name: 'Classique', spicy: false, extraDesc: 'Toute l’intensité aromatique de la pâte de piment fermentée coréenne.' },
+                    { name: 'Egg', spicy: false, extraDesc: 'Adouci par un œuf au plat fondant et gourmand.' },
+                    { name: 'Ananas', spicy: false, extraDesc: 'Contraste irrésistible entre le Gochujang et l’ananas sucré.' },
+                    { name: 'Egg Ananas', spicy: false, extraDesc: 'La version royale avec œuf coulant et tranche d’ananas rôti.' }
+                ]
+            },
+            {
+                id: 'dakiburg-spycigo',
+                name: 'DakiBurg SpyciGo',
+                category: 'burgers',
+                categoryLabel: 'DakiBurgs',
+                emoji: '🔥',
+                spicy: true,
+                baseDesc: 'Notre burger haute intensité : poulet croustillant enrobé de sauce SpyciGo relevée pour les amateurs de sensations.',
+                variants: [
+                    { name: 'Classique', spicy: true, extraDesc: 'Piquant intense et addictif dès la première bouchée.' },
+                    { name: 'Egg', spicy: true, extraDesc: 'L’œuf coulant vient équilibrer le feu de la sauce SpyciGo.' },
+                    { name: 'Ananas', spicy: true, extraDesc: 'Le duel sucré-brûlant avec une tranche d’ananas juteuse.' },
+                    { name: 'Egg Ananas', spicy: true, extraDesc: 'Le maxi-burger complet : œuf, ananas et sauce SpyciGo explosive !' }
+                ]
+            },
+            {
+                id: 'wings-honey',
+                name: 'Wings Honey',
+                category: 'wings',
+                categoryLabel: 'Wings & Sides',
+                emoji: '🍗',
+                spicy: false,
+                baseDesc: 'Ailes de poulet doublement frites pour un croustillant extrême, glacées au miel doré et graines de sésame.',
+                variants: []
+            },
+            {
+                id: 'wings-gochu',
+                name: 'Wings Gochu',
+                category: 'wings',
+                categoryLabel: 'Wings & Sides',
+                emoji: '🍗',
+                spicy: false,
+                baseDesc: 'Ailes de poulet croustillantes enrobées de notre glaçage Gochujang riche en umami.',
+                variants: []
+            },
+            {
+                id: 'wings-spycigo',
+                name: 'Wings SpyciGo',
+                category: 'wings',
+                categoryLabel: 'Wings & Sides',
+                emoji: '🌶️',
+                spicy: true,
+                baseDesc: 'Ailes de poulet croustillantes nappées de la sauce SpyciGo ultra-relevée. Attention, ça chauffe !',
+                variants: []
+            },
+            {
+                id: 'mando',
+                name: 'Mando',
+                category: 'wings',
+                categoryLabel: 'Wings & Sides',
+                emoji: '🥟',
+                spicy: false,
+                baseDesc: 'Raviolis coréens (Mandu)  farcis aux poulet et crevette .',
+                variants: [
+                    { name: 'Non-Spyci', spicy: false, extraDesc: 'Servis avec une sauce douce et parfumée au sésame.' },
+                    { name: 'Spyci', spicy: true, extraDesc: 'Accompagnés d’une sauce pimentée relevée qui réveille les papilles.' }
+                ]
+            },
+            {
+                id: 'rolls',
+                name: 'Rolls',
+                category: 'wings',
+                categoryLabel: 'Wings & Sides',
+                emoji: '🌯',
+                spicy: false,
+                baseDesc: 'Rouleaux croustillants façon street-food coréenne, dorés à souhait et servis avec sauce maison.',
+                variants: []
+            },
+            {
+                id: 'calamar',
+                name: 'Calamar',
+                category: 'wings',
+                categoryLabel: 'Wings & Sides',
+                emoji: '🦑',
+                spicy: false,
+                baseDesc: 'Beignets de calamars tendres à l’intérieur et ultra-croustillants à l’extérieur, pointe de citron et sésame.',
+                variants: []
+            },
+            {
+                id: 'pasta',
+                name: 'Pasta',
+                category: 'bowls',
+                categoryLabel: 'Plats & Bowls',
+                emoji: '🍝',
+                spicy: false,
+                baseDesc: 'Pâtes fusion coréennes onctueuses inspirées de la street-food de Séoul.',
+                variants: [
+                    { name: 'Rosé', spicy: false, extraDesc: 'Sauce crémeuse emblématique mêlant douceur lactée et pointe de gochujang.' },
+                    { name: '4 Wings', spicy: false, extraDesc: 'Servies avec 4 ailes de poulet croustillantes dorées.' },
+                    { name: 'Egg', spicy: false, extraDesc: 'Couronnées d’un œuf coulant qui rend la sauce encore plus veloutée.' },
+                    { name: 'Katsu', spicy: false, extraDesc: 'Accompagnées d’une escalope de poulet panée Katsu bien croustillante.' }
+                ]
+            }
+        ];
+
+        // ==========================================
+        // 2. GESTION AUDIO (TONE.JS)
+        // ==========================================
+        let soundEnabled = true;
+        let synth = null;
+
+        function initAudio() {
+            if (!synth && typeof Tone !== 'undefined') {
+                synth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: 'triangle' },
+                    envelope: { attack: 0.01, decay: 0.1, sustain: 0.05, release: 0.2 }
+                }).toDestination();
+                synth.volume.value = -10;
+            }
+        }
+
+        function playTickSound(step) {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                if (Tone.context.state !== 'running') Tone.start();
+                const notes = ['C4', 'D4', 'E4', 'G4', 'A4'];
+                const note = notes[step % notes.length];
+                synth.triggerAttackRelease(note, '32n');
+            } catch (e) { /* Ignorer si audio bloqué */ }
+        }
+
+        function playWinSound() {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                if (Tone.context.state !== 'running') Tone.start();
+                const now = Tone.now();
+                synth.triggerAttackRelease('C5', '16n', now);
+                synth.triggerAttackRelease('E5', '16n', now + 0.08);
+                synth.triggerAttackRelease('G5', '16n', now + 0.16);
+                synth.triggerAttackRelease('C6', '4n', now + 0.24);
+            } catch (e) { /* Ignorer si audio bloqué */ }
+        }
+
+        // ==========================================
+        // 3. LOGIQUE DE FILTRAGE & COMBINAISONS
+        // ==========================================
+        let activeCategory = 'all';
+        let excludeSpicy = false;
+        let isSpinning = false;
+        let currentSelection = null;
+        const spinHistory = [];
+
+        function getFilteredCombinations() {
+            const combinations = [];
+
+            MENU_DATA.forEach(item => {
+                // Filtre catégorie
+                if (activeCategory !== 'all' && item.category !== activeCategory) {
+                    return;
+                }
+
+                // Si le plat n'a pas de variantes
+                if (item.variants.length === 0) {
+                    if (excludeSpicy && item.spicy) return;
+                    combinations.push({
+                        dish: item.name,
+                        variant: null,
+                        category: item.category,
+                        categoryLabel: item.categoryLabel,
+                        emoji: item.emoji,
+                        spicy: item.spicy,
+                        description: item.baseDesc
+                    });
+                } else {
+                    // Parcourir chaque variante
+                    item.variants.forEach(variant => {
+                        const isComboSpicy = item.spicy || variant.spicy;
+                        if (excludeSpicy && isComboSpicy) return;
+
+                        combinations.push({
+                            dish: item.name,
+                            variant: variant.name,
+                            category: item.category,
+                            categoryLabel: item.categoryLabel,
+                            emoji: item.emoji,
+                            spicy: isComboSpicy,
+                            description: `${item.baseDesc} ${variant.extraDesc}`
+                        });
+                    });
+                }
+            });
+
+            return combinations;
+        }
+
+        function updatePoolCount() {
+            const pool = getFilteredCombinations();
+            const countEl = document.getElementById('pool-count');
+            countEl.textContent = `${pool.length} combinaison${pool.length > 1 ? 's' : ''}`;
+        }
+
+        // ==========================================
+        // 4. ANIMATION DE LA ROULETTE & CONFETTIS
+        // ==========================================
+        function displayCombination(combo, isFinal = false) {
+            const emojiEl = document.getElementById('result-emoji');
+            const dishEl = document.getElementById('result-dish');
+            const variantEl = document.getElementById('result-variant');
+            const catBadgeEl = document.getElementById('result-category-badge');
+            const descEl = document.getElementById('result-description');
+            const slotCard = document.getElementById('slot-card');
+
+            emojiEl.textContent = combo.emoji;
+            dishEl.textContent = combo.dish;
+            catBadgeEl.textContent = combo.categoryLabel;
+
+            if (combo.variant) {
+                variantEl.innerHTML = `✨ Option : <span class="underline decoration-honey/60 underline-offset-2">${combo.variant}</span> ${combo.spicy ? '🌶️' : ''}`;
+                variantEl.className = combo.spicy
+                    ? 'inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm sm:text-base font-extrabold bg-gochujang/20 text-red-300 border border-gochujang/40'
+                    : 'inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm sm:text-base font-extrabold bg-honey/20 text-honey border border-honey/40';
+            } else {
+                variantEl.innerHTML = combo.spicy ? '🌶️ Recette Épicée Signature' : '⭐ Recette Originale';
+                variantEl.className = 'inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm sm:text-base font-bold bg-white/10 text-gray-200 border border-white/20';
+            }
+
+            if (isFinal) {
+                descEl.textContent = combo.description;
+                descEl.classList.remove('opacity-40');
+                slotCard.classList.add('border-honey', 'animate-pulse-glow');
+                emojiEl.classList.add('scale-125');
+                setTimeout(() => emojiEl.classList.remove('scale-125'), 300);
+            } else {
+                descEl.textContent = 'Sélection en cours parmi les spécialités DAKITORI...';
+                descEl.classList.add('opacity-40');
+                slotCard.classList.remove('border-honey', 'animate-pulse-glow');
+            }
+        }
+
+        function spinRoulette() {
+            if (isSpinning) return;
+
+            const pool = getFilteredCombinations();
+            if (pool.length === 0) {
+                showToast('Aucun plat ne correspond à ces filtres !');
+                return;
+            }
+
+            isSpinning = true;
+            const spinBtn = document.getElementById('spin-btn');
+            const spinBtnText = document.getElementById('spin-btn-text');
+            const spinBtnIcon = document.getElementById('spin-btn-icon');
+            const copyBtn = document.getElementById('copy-btn');
+
+            spinBtn.disabled = true;
+            spinBtn.classList.add('opacity-80', 'cursor-not-allowed');
+            spinBtnText.textContent = 'Tirage en cours...';
+            spinBtnIcon.classList.add('animate-spin');
+            copyBtn.classList.add('hidden');
+
+            // Choisir le gagnant à l'avance (en évitant de retomber 2 fois de suite sur le même si possible)
+            let winner;
+            do {
+                winner = pool[Math.floor(Math.random() * pool.length)];
+            } while (pool.length > 1 && currentSelection && winner.dish === currentSelection.dish && winner.variant === currentSelection.variant);
+
+            // Séquence de ralentissement progressif (machine à sous)
+            const totalSteps = 24;
+            let step = 0;
+
+            function nextStep() {
+                step++;
+                if (step < totalSteps) {
+                    const randomPreview = pool[Math.floor(Math.random() * pool.length)];
+                    displayCombination(randomPreview, false);
+                    playTickSound(step);
+
+                    // Courbe d'accélération/ralentissement exponentielle
+                    const delay = 45 + Math.pow(step / totalSteps, 2.6) * 260;
+                    setTimeout(nextStep, delay);
+                } else {
+                    // Arrêt final sur le plat gagnant
+                    currentSelection = winner;
+                    displayCombination(winner, true);
+                    playWinSound();
+                    launchConfetti();
+                    addToHistory(winner);
+
+                    isSpinning = false;
+                    spinBtn.disabled = false;
+                    spinBtn.classList.remove('opacity-80', 'cursor-not-allowed');
+                    spinBtnText.textContent = 'Relancer le tirage';
+                    spinBtnIcon.classList.remove('animate-spin');
+                    copyBtn.classList.remove('hidden');
+                }
+            }
+
+            nextStep();
+        }
+
+        function addToHistory(combo) {
+            const label = combo.variant ? `${combo.dish} (${combo.variant})` : combo.dish;
+            // Éviter les doublons consécutifs
+            if (spinHistory[0] === label) return;
+
+            spinHistory.unshift(label);
+            if (spinHistory.length > 5) spinHistory.pop();
+
+            const container = document.getElementById('history-container');
+            const list = document.getElementById('history-list');
+            container.classList.remove('hidden');
+
+            list.innerHTML = spinHistory.map((item, idx) => `
+                <span class="px-3 py-1 rounded-full text-xs font-medium ${idx === 0 ? 'bg-honey/20 text-honey border border-honey/30' : 'bg-slateDark text-gray-400 border border-white/10'}">
+                    ${item}
+                </span>
+            `).join('');
+        }
+
+        // ==========================================
+        // 5. EFFET CONFETTIS SUR CANVAS RESPONSIVE
+        // ==========================================
+        const confettiCanvas = document.getElementById('confetti-canvas');
+        const ctx = confettiCanvas.getContext('2d');
+        let particles = [];
+        let animationId = null;
+
+        function resizeCanvas() {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function launchConfetti() {
+            resizeCanvas();
+            particles = [];
+            const colors = ['#E63946', '#FFB703', '#FFD166', '#FFFFFF', '#FB8500'];
+
+            for (let i = 0; i < 85; i++) {
+                particles.push({
+                    x: confettiCanvas.width / 2 + (Math.random() - 0.5) * 200,
+                    y: confettiCanvas.height * 0.45,
+                    vx: (Math.random() - 0.5) * 16,
+                    vy: (Math.random() - 0.8) * 16 - 4,
+                    size: Math.random() * 8 + 4,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    rotation: Math.random() * 360,
+                    vRot: (Math.random() - 0.5) * 12,
+                    alpha: 1
+                });
+            }
+
+            if (animationId) cancelAnimationFrame(animationId);
+            animateConfetti();
+        }
+
+        function animateConfetti() {
+            ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            let active = false;
+
+            particles.forEach(p => {
+                if (p.alpha <= 0) return;
+                active = true;
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.45; // Gravité
+                p.vx *= 0.98;
+                p.rotation += p.vRot;
+                p.alpha -= 0.014;
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, p.alpha);
+                ctx.translate(p.x, p.y);
+                ctx.rotate((p.rotation * Math.PI) / 180);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+                ctx.restore();
+            });
+
+            if (active) {
+                animationId = requestAnimationFrame(animateConfetti);
+            } else {
+                ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            }
+        }
+
+        // ==========================================
+        // 6. RENDU DE LA CARTE COMPLÈTE INTERACTIVE
+        // ==========================================
+        function renderFullMenu() {
+            const grid = document.getElementById('menu-grid');
+            grid.innerHTML = MENU_DATA.map(item => {
+                const variantsHtml = item.variants.length > 0
+                    ? `<div class="mt-4 pt-4 border-t border-white/10">
+                        <span class="text-[11px] uppercase tracking-wider text-gray-400 font-semibold block mb-2">Variantes disponibles :</span>
+                        <div class="flex flex-wrap gap-1.5">
+                            ${item.variants.map(v => {
+                                const isSpicy = item.spicy || v.spicy;
+                                return `<button
+                                    onclick="previewMenuItem('${item.id}', '${v.name.replace(/'/g, "\\'")}')"
+                                    class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${isSpicy ? 'bg-gochujang/15 text-red-300 border border-gochujang/30 hover:bg-gochujang hover:text-white' : 'bg-charcoal text-gray-200 border border-white/10 hover:border-honey hover:text-honey'}">
+                                    ${v.name} ${isSpicy ? '🌶️' : ''}
+                                </button>`;
+                            }).join('')}
+                        </div>
+                    </div>`
+                    : `<div class="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
+                        <span class="text-xs text-gray-400 italic">Recette unique</span>
+                        <button
+                            onclick="previewMenuItem('${item.id}', null)"
+                            class="px-3 py-1 rounded-lg text-xs font-semibold bg-charcoal text-honey border border-honey/30 hover:bg-honey hover:text-charcoal transition-all cursor-pointer">
+                            Tester ce plat
+                        </button>
+                    </div>`;
+
+                return `
+                    <div class="bg-slateDark rounded-2xl p-6 border border-white/10 hover:border-honey/40 transition-all flex flex-col justify-between shadow-lg group">
+                        <div>
+                            <div class="flex items-start justify-between gap-3 mb-3">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-3xl bg-charcoal p-2.5 rounded-xl border border-white/5 group-hover:scale-110 transition-transform">${item.emoji}</span>
+                                    <div>
+                                        <h3 class="text-lg font-extrabold text-white group-hover:text-honey transition-colors">${item.name}</h3>
+                                        <span class="text-xs text-gray-400">${item.categoryLabel}</span>
+                                    </div>
+                                </div>
+                                ${item.spicy ? '<span class="px-2 py-0.5 rounded-md bg-gochujang/20 text-gochujang text-xs font-bold border border-gochujang/30">Spyci 🌶️</span>' : ''}
+                            </div>
+                            <p class="text-gray-300 text-sm leading-relaxed">
+                                ${item.baseDesc}
+                            </p>
+                        </div>
+                        ${variantsHtml}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Permet de cliquer sur un plat de la carte pour le charger dans le sélecteur
+        window.previewMenuItem = function(itemId, variantName) {
+            const item = MENU_DATA.find(m => m.id === itemId);
+            if (!item) return;
+
+            let combo;
+            if (variantName) {
+                const variantObj = item.variants.find(v => v.name === variantName);
+                combo = {
+                    dish: item.name,
+                    variant: variantObj.name,
+                    category: item.category,
+                    categoryLabel: item.categoryLabel,
+                    emoji: item.emoji,
+                    spicy: item.spicy || variantObj.spicy,
+                    description: `${item.baseDesc} ${variantObj.extraDesc}`
+                };
+            } else {
+                combo = {
+                    dish: item.name,
+                    variant: null,
+                    category: item.category,
+                    categoryLabel: item.categoryLabel,
+                    emoji: item.emoji,
+                    spicy: item.spicy,
+                    description: item.baseDesc
+                };
+            }
+
+            currentSelection = combo;
+            displayCombination(combo, true);
+            document.getElementById('copy-btn').classList.remove('hidden');
+            document.getElementById('roulette').scrollIntoView({ behavior: 'smooth' });
+            showToast(`Sélectionné : ${combo.dish}${combo.variant ? ' — ' + combo.variant : ''}`);
+        };
+
+        // ==========================================
+        // 7. UTILITAIRES & ÉCOUTEURS D'ÉVÉNEMENTS
+        // ==========================================
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            toastMsg.textContent = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function copySelectionToClipboard() {
+            if (!currentSelection) return;
+            const text = currentSelection.variant
+                ? `Mon choix DAKITORI : ${currentSelection.dish} (Option ${currentSelection.variant})`
+                : `Mon choix DAKITORI : ${currentSelection.dish}`;
+
+            const tempInput = document.createElement('textarea');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            try {
+                document.execCommand('copy');
+                showToast('Choix copié dans le presse-papiers !');
+            } catch (err) {
+                showToast('Impossible de copier automatiquement.');
+            }
+            document.body.removeChild(tempInput);
+        }
+
+        window.onload = function () {
+            resizeCanvas();
+            renderFullMenu();
+            updatePoolCount();
+
+            // Bouton Lancer la roulette
+            document.getElementById('spin-btn').addEventListener('click', spinRoulette);
+
+            // Bouton Copier
+            document.getElementById('copy-btn').addEventListener('click', copySelectionToClipboard);
+
+            // Boutons filtres de catégorie
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn').forEach(b => {
+                        b.classList.remove('active', 'bg-gochujang', 'text-white', 'shadow-md');
+                        b.classList.add('bg-charcoal/80', 'text-gray-300', 'border', 'border-white/10');
+                    });
+                    btn.classList.add('active', 'bg-gochujang', 'text-white', 'shadow-md');
+                    btn.classList.remove('bg-charcoal/80', 'text-gray-300', 'border', 'border-white/10');
+
+                    activeCategory = btn.getAttribute('data-cat');
+                    updatePoolCount();
+                });
+            });
+
+            // Checkbox sans épicé
+            document.getElementById('exclude-spicy').addEventListener('change', (e) => {
+                excludeSpicy = e.target.checked;
+                updatePoolCount();
+            });
+
+            // Toggle Son
+            document.getElementById('sound-toggle').addEventListener('click', () => {
+                soundEnabled = !soundEnabled;
+                document.getElementById('sound-icon').textContent = soundEnabled ? '🔊' : '🔇';
+                document.getElementById('sound-label').textContent = soundEnabled ? 'Son activé' : 'Son coupé';
+            });
+        };
+    </script>
+</body>
+</html>
